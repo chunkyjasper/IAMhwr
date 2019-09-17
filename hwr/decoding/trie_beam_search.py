@@ -99,7 +99,7 @@ def __trie_beam_search(mat, bw, top_paths, use_lm, candidate_cap):
 
                     # Apply character level language model and calculate Ptxt(beam)
                     prefix = beam[-(lm_order - 1):]
-                    if use_lm and ptxt[new_beam] is None:
+                    if use_lm:
                         # Ptxt(beam+c) = P(c|last n char in beam)
                         ptxt[new_beam] = lm.score(char.lower(), [p for p in prefix.lower()])
                     else:

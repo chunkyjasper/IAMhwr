@@ -141,6 +141,7 @@ PRETRAINED = {
     "ONNET3": ON.PATH.MODEL_DIR + "ONNET3/2019-02-28-19:13:08/weights.h5",
     "ONNET3v2": ON.PATH.MODEL_DIR + "ONNET3v2/2019-03-24-00:22:37-a412/weights.h5",
     "ONNET": ON.PATH.MODEL_DIR + "ONNET/pretrained/weights.h5",
+    "ONNET-LSTM": ON.PATH.MODEL_DIR + "ONNET/pretrained-lstm/weights.h5",
 }
 
 LINE_BLACKLIST = ["h02-037-02",  # corrupted stroke

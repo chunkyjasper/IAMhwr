@@ -1,6 +1,6 @@
 import random
 import numpy as np
-from tensorflow._api.v1.keras.utils import Sequence
+from tensorflow.keras.utils import Sequence
 from hwr.decoding.mlf import mlf2label, mlf2txt
 from hwr.data.reader import IAMReader, xmlpath2npypath
 from hwr.constants import SPLIT, ON
