@@ -34,10 +34,10 @@ class ONNETpred(IPred):
             for x, y in stroke:
                 points.append(Point(i, 0, x, y))
         pointset = PointSet(points=points)
-        pointset.plot_strokes()
+        #pointset.plot_strokes()
         scheme = ON.PREPROCESS.SCHEME6
         pointset.preprocess(**scheme)
-        pointset.plot_strokes()
+        #pointset.plot_strokes()
         print(pointset)
         return pointset.generate_features(add_pad=10)
 
