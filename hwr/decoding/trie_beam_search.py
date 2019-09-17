@@ -44,14 +44,15 @@ def get_ending_alphas(text):
 
 # sm has dimension [sample, timestep, num_of_chars]
 def trie_beam_search(rnn_out, bw, top_paths, use_lm=True, candidate_cap=5):
-    return [__trie_beam_search(x, bw, top_paths, use_lm, lm_order, candidate_cap) for x in tqdm(rnn_out)]
+    return [__trie_beam_search(x, bw, top_paths, use_lm, candidate_cap) for x in tqdm(rnn_out)]
 
 
 def __trie_beam_search(mat, bw, top_paths, use_lm, candidate_cap):
     global lm
     global trie
+    lm_order = 5
     if lm is None:
-        lm = load_lm(5, BASE_DIR + '../data/lm/lm_5gramchar_counter_pruned-100.pkl')
+        lm = load_lm(lm_order, BASE_DIR + '../data/lm/lm_5gramchar_counter_pruned-100.pkl')
     if trie is None:
         trie = load_trie(BASE_DIR + '../data/wiki-100k.txt')
 
@@ -66,6 +67,7 @@ def __trie_beam_search(mat, bw, top_paths, use_lm, candidate_cap):
     pnb[0][''] = 0
     ptxt[''] = 1
     beams_prev = ['']
+
     non_alphas = ON.DATA.NON_ALPHAS
     letters = ON.DATA.CHARS
 
