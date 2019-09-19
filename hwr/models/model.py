@@ -1,25 +1,27 @@
 import abc
-import tensorflow as tf
-import os
-from tensorflow.keras.utils import Sequence
-from tensorflow.keras.models import Model
-from hwr.constants import DECODER, PRETRAINED, ON
-from hwr.decoding.ctc_decode import beam_search, best_path
-from hwr.decoding.trie_beam_search import trie_beam_search
-from hwr.models.metrics import character_error_rate
 import datetime
+import os
+
+import tensorflow as tf
+from tensorflow.keras.models import Model
+from tensorflow.keras.utils import Sequence
+
+from hwr.constants import PRETRAINED, ON
+from hwr.decoding.ctc_decoder import TrieBeamSearchDecoder
+from hwr.models.metrics import character_error_rate
 
 
 # Interface for prediction model
 class HWRModel(object):
     def __init__(self, chars=ON.DATA.CHARS, preload=False,
-                 decoder=DECODER.TRIE_BEAM_SEARCH):
+                 decoder=None):
         __metaclass__ = abc.ABCMeta
+        if decoder is None:
+            self.decoder = TrieBeamSearchDecoder(beam_width=25)
         self.chars = chars
         self.class_name = type(self).__name__
         self.ckptdir = ON.PATH.CKPT_DIR + self.class_name + "/"
         self.char_size = len(chars) + 1
-        self.decoder = decoder
         self.model = self.get_model_conf()
         self.compile()
         if preload:
@@ -89,14 +91,7 @@ class HWRModel(object):
         if decoder is None:
             decoder = self.decoder
         softmaxs = self.predict_softmax(x)
-        pred = None
-        if decoder == DECODER.BEST_PATH:
-            pred = best_path(softmaxs)
-            pred = list(map(lambda p: [p for _ in range(top)], pred))
-        elif decoder == DECODER.VANILLA_BEAM_SEARCH:
-            pred = beam_search(softmaxs, 20, top_paths=top)
-        elif decoder == DECODER.TRIE_BEAM_SEARCH:
-            pred = trie_beam_search(softmaxs, 20, top_paths=top, use_lm=True)
+        pred = decoder.decode(rnn_out=softmaxs, top_n=top)
         if top == 1:
             pred = [p[0] for p in pred]
         return pred

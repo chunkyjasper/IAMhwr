@@ -94,13 +94,13 @@ class IAMReader(object):
 
     # Given a data split, return the sample names list
     def __get_sample_names_from_split(self, split):
-        f = open(self.get_split_dir() + split)
+        f = open(self.data_path + "split-config/" + split)
         return [line.strip(' \n') for line in f]
 
     # Given samples name e.g. ['a02-050',], return samples with path to data and ground truth.
     def __get_samples_from_name(self, names, blacklist=ON.DATA.BLACKLIST):
         # File of ground truth of each sample
-        f = open(self.__get_lines_data_dir() + "t2_labels.mlf")
+        f = open(self.data_path + "lines/t2_labels.mlf")
 
         samples = []
         curr_path = ""
@@ -131,7 +131,7 @@ class IAMReader(object):
                 fn_split = file_name.split('-')
                 path = fn_split[0] + "/" + fn_split[0] + "-" + fn_split[1][:3] + \
                        "/" + file_name + ".xml"
-                path = ON.PATH.LINE_DATA_DIR + 'data/' + path
+                path = self.data_path + 'lines/data/' + path
 
                 # if corrupted file/not found, pass
                 try:
@@ -148,14 +148,6 @@ class IAMReader(object):
                 line_split = line.strip('\n')
                 curr_gt.append(line_split)
         return samples
-
-
-
-    def __get_lines_data_dir(self):
-        return self.data_path + "lines/"
-
-    def get_split_dir(self):
-        return self.data_path + "split-config/"
 
 
 def xmlpath2npypath(path, npz_dir):
