@@ -11,6 +11,7 @@ class ON:
         SPLIT_CONFIG_DIR = DATA_DIR + "split-config/"
         LINE_DATA_DIR = DATA_DIR + "lines/"
         CKPT_DIR = MODEL_DIR + "checkpoint/"
+        LM_DATA_DIR = BASE_DIR + "../data/lm/"
 
     class PREPROCESS:
         # def preprocess(self, down_d=0, down_cos=1, slop_correction=False,

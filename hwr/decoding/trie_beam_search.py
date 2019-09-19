@@ -8,29 +8,6 @@ from hwr.lm.lm import KneserNeyBackoff
 from nltk.lm import Vocabulary
 from hwr.decoding.trie import Trie
 
-# Cache models initialization
-lm = None
-trie = None
-
-
-def load_trie(file_path):
-    with open(file_path, encoding='utf8') as fin:
-        vocab_txt = fin.read().splitlines()
-    # vocabs to lowercase and remove ones with illegal chars
-    vocab_txt = [v.lower() for v in vocab_txt if v[:2] != "#!"]
-    vocab_txt = [v for v in vocab_txt if all([c in ON.DATA.CHARS for c in v])]
-    t = Trie()
-    t.mass_insert(vocab_txt)
-    return t
-
-
-def load_lm(order, counter_file_path):
-    with open(counter_file_path, 'rb') as fin:
-        counter = pickle.load(fin)
-    chars = Vocabulary(ON.DATA.CHARS)
-    return KneserNeyBackoff(order, backoff=0.4, counter=counter, vocabulary=chars)
-
-
 # get the ending alphabets given a word beam
 def get_ending_alphas(text):
     end_alphas = ""
@@ -43,19 +20,11 @@ def get_ending_alphas(text):
 
 
 # sm has dimension [sample, timestep, num_of_chars]
-def trie_beam_search(rnn_out, bw, top_paths, use_lm=True, candidate_cap=5):
-    return [__trie_beam_search(x, bw, top_paths, use_lm, candidate_cap) for x in tqdm(rnn_out)]
+def trie_beam_search(rnn_out, lm, trie, bw, top_paths, lm_order, candidate_cap=5):
+    return [__trie_beam_search(x, lm, trie, bw, top_paths, lm_order, candidate_cap) for x in tqdm(rnn_out)]
 
 
-def __trie_beam_search(mat, bw, top_paths, use_lm, candidate_cap):
-    global lm
-    global trie
-    lm_order = 5
-    if lm is None:
-        lm = load_lm(lm_order, BASE_DIR + '../data/lm/lm_5gramchar_counter_pruned-100.pkl')
-    if trie is None:
-        trie = load_trie(BASE_DIR + '../data/wiki-100k.txt')
-
+def __trie_beam_search(mat, lm, trie, bw, top_paths, lm_order, candidate_cap):
     # pb[t][beam]: P of {beam} at time {t} ending with blank '%'
     # pnb[t][beam]: P of {beam} at time {t} ending with any non blank chars
     # Ptxt[beam] : P of {beam} given a language model.
@@ -99,7 +68,7 @@ def __trie_beam_search(mat, bw, top_paths, use_lm, candidate_cap):
 
                     # Apply character level language model and calculate Ptxt(beam)
                     prefix = beam[-(lm_order - 1):]
-                    if use_lm:
+                    if lm:
                         # Ptxt(beam+c) = P(c|last n char in beam)
                         ptxt[new_beam] = lm.score(char.lower(), [p for p in prefix.lower()])
                     else:

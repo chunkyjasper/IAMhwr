@@ -1,12 +1,20 @@
 import abc
+
+import dill as pickle
 import numpy as np
+from nltk.lm import Vocabulary
 from tensorflow.keras import backend as K
 from tensorflow.keras.backend import ctc_decode
 from tensorflow.python.ops import ctc_ops as ctc
 from tensorflow.python.ops import sparse_ops, math_ops, array_ops
-from hwr.decoding.mlf import label2txt
 from tqdm import tqdm
+
+from hwr.constants import ON, BASE_DIR
+from hwr.decoding.mlf import label2txt
+from hwr.decoding.trie import Trie
 from hwr.decoding.trie_beam_search import trie_beam_search
+from hwr.lm.lm import KneserNeyBackoff
+
 
 # Interface for a CTC decoding algorithm
 class ICTCDecoder:
@@ -44,13 +52,41 @@ class BeamSearchDecoder(ICTCDecoder):
 
 # See trie_beam_search.py
 class TrieBeamSearchDecoder(ICTCDecoder):
-    def __init__(self, beam_width, use_lm=True):
+    def __init__(self, beam_width, lm=None, trie=None, lm_order=0):
+
         super(TrieBeamSearchDecoder).__init__()
         self.beam_width = beam_width
-        self.use_lm = use_lm
+        self.lm = lm
+        self.lm_order = lm_order
+        if lm is None:
+            self.lm_order = 5
+            self.lm = load_lm(self.lm_order, ON.PATH.LM_DATA_DIR + "5gram_counter_pruned-100.pkl")
+        self.trie = trie
+        if trie is None:
+            self.trie = load_trie(ON.PATH.LM_DATA_DIR + "wiki-100k.txt")
 
     def decode(self, rnn_out, top_n):
-        return trie_beam_search(rnn_out, self.beam_width, top_n, )
+        return trie_beam_search(rnn_out, self.lm, self.trie,
+                                self.beam_width, top_paths=top_n,
+                                lm_order=self.lm_order)
+
+
+def load_trie(file_path):
+    with open(file_path, encoding='utf8') as fin:
+        vocab_txt = fin.read().splitlines()
+    # vocabs to lowercase and remove ones with illegal chars
+    vocab_txt = [v.lower() for v in vocab_txt if v[:2] != "#!"]
+    vocab_txt = [v for v in vocab_txt if all([c in ON.DATA.CHARS for c in v])]
+    t = Trie()
+    t.mass_insert(vocab_txt)
+    return t
+
+
+def load_lm(order, counter_file_path):
+    with open(counter_file_path, 'rb') as fin:
+        counter = pickle.load(fin)
+    chars = Vocabulary(ON.DATA.CHARS)
+    return KneserNeyBackoff(order, backoff=0.4, counter=counter, vocabulary=chars)
 
 
 def best_path_raw(rnn_out, remove_dup=True):
@@ -97,6 +133,5 @@ def beam_search(rnn_out, beam_width, top_paths=1):
             pred[k].append(c[k])
     pred = [list(label2txt(p, multiple=True)) for p in pred]
     return pred
-
 
 

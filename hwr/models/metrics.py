@@ -1,5 +1,6 @@
 import editdistance
 
+
 # edit distance/length of ground truth
 def character_error_rate(y_true, y_pred):
     assert len(y_true) == len(y_pred)
