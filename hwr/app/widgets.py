@@ -69,11 +69,18 @@ class DrawingArea(tk.LabelFrame):
         pub(Event.PRED_COMPUTED, result)
 
 
-# The predicted text
 class TextArea(tk.LabelFrame):
+
     def __init__(self, parent, **kwargs):
         super().__init__(parent, **kwargs)
         self.setup_textbox()
+        sub(Event.PRED_SELECTED, lambda x: self.insert_text(x))
+        sub(Event.START_DRAWING, lambda x: self.set_word_start())
+        sub(Event.PRED_COMPUTED, lambda x: self.on_predictions_computed(x))
+
+    def on_predictions_computed(self, preds):
+        self.insert_text(preds[0])
+        self.set_word_end()
 
     def setup_textbox(self):
         self.textbox = tk.scrolledtext.ScrolledText(self)
