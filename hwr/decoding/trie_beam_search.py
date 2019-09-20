@@ -1,12 +1,10 @@
 from collections import defaultdict, Counter
 
-import dill as pickle
 import numpy as np
 from tqdm import tqdm
-from hwr.constants import ON, BASE_DIR
-from hwr.lm.lm import KneserNeyBackoff
-from nltk.lm import Vocabulary
-from hwr.decoding.trie import Trie
+
+from hwr.constants import ON
+
 
 # get the ending alphabets given a word beam
 def get_ending_alphas(text):

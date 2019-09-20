@@ -1,13 +1,13 @@
 import tkinter as tk
 from tkinter import scrolledtext
+from hwr.app.pubsub import pub, sub
+from hwr.app.event import Event
 
 
 # the drawing pad
 class DrawingArea(tk.LabelFrame):
-    def __init__(self, parent, text_area, predict_area, pred, **kwargs):
+    def __init__(self, parent, pred, **kwargs):
         super().__init__(parent, **kwargs)
-        self.text_area = text_area
-        self.predict_area = predict_area
         self.pred = pred()
         # state variables
         self.btn1pressed = False
@@ -18,12 +18,11 @@ class DrawingArea(tk.LabelFrame):
         self.after_list = []
         self.curr_stroke = 0
         self.points = []
-
         self.setup_canvas()
 
     def mouse1press(self, event):
         if not self.drawing:
-            self.text_area.set_word_start()
+            pub(Event.START_DRAWING, None)
         self.drawing = True
         self.btn1pressed = True
         self.xorig = event.x
@@ -67,14 +66,11 @@ class DrawingArea(tk.LabelFrame):
     def get_predictions(self):
         features = self.pred.get_features(self.points)
         result = self.pred.predict(features, 5)
-        self.text_area.insert_text(result[0])
-        self.text_area.set_word_end()
-        self.predict_area.update_buttons(result)
+        pub(Event.PRED_COMPUTED, result)
 
 
 # The predicted text
 class TextArea(tk.LabelFrame):
-
     def __init__(self, parent, **kwargs):
         super().__init__(parent, **kwargs)
         self.setup_textbox()
@@ -105,11 +101,11 @@ class TextArea(tk.LabelFrame):
 
 # the top-n predictions for correction
 class PredictionArea(tk.LabelFrame):
-    def __init__(self, parent, text_area, **kwargs):
+    def __init__(self, parent, **kwargs):
         super().__init__(parent, **kwargs)
         self.buttons = []
         self.setup_predictions(5)
-        self.text_area = text_area
+        sub(Event.PRED_COMPUTED, lambda x: self.update_buttons(x))
 
     def setup_predictions(self, n):
         for i in range(n):
@@ -121,5 +117,5 @@ class PredictionArea(tk.LabelFrame):
     def update_buttons(self, preds):
         assert (len(preds) == len(self.buttons))
         for i in range(len(self.buttons)):
-            self.buttons[i].config(text=preds[i], command=lambda t=preds[i]: self.text_area.insert_text(t))
+            self.buttons[i].config(text=preds[i], command=lambda t=preds[i]: pub(Event.PRED_SELECTED, t))
 
