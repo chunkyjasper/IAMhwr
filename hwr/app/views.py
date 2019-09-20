@@ -5,10 +5,9 @@ from hwr.app.event import Event
 
 
 # the drawing pad
-class DrawingArea(tk.LabelFrame):
-    def __init__(self, parent, pred, **kwargs):
+class WritingPadView(tk.LabelFrame):
+    def __init__(self, parent, **kwargs):
         super().__init__(parent, **kwargs)
-        self.pred = pred()
         # state variables
         self.btn1pressed = False
         self.newline = True
@@ -18,11 +17,13 @@ class DrawingArea(tk.LabelFrame):
         self.after_list = []
         self.curr_stroke = 0
         self.points = []
+        # View
         self.setup_canvas()
 
     def mouse1press(self, event):
         if not self.drawing:
             pub(Event.START_DRAWING, None)
+            # self.text_area.set_word_start()
         self.drawing = True
         self.btn1pressed = True
         self.xorig = event.x
@@ -37,7 +38,7 @@ class DrawingArea(tk.LabelFrame):
         self.xorig = None
         self.yorig = None
         # Wait 2s, if mouse1 was not pressed, clear canvas
-        after_id = self.after(1000, self.clear_canvas)
+        after_id = self.after(1000, self.on_end_drawing)
         self.after_list.append(after_id)
 
     def mousemove(self, event):
@@ -48,6 +49,7 @@ class DrawingArea(tk.LabelFrame):
                                          smooth=tk.TRUE, width=3)
             self.xorig = event.x
             self.yorig = event.y
+            # append point to last stroke
             self.points[-1].append((event.x, event.y))
 
     def setup_canvas(self):
@@ -57,28 +59,26 @@ class DrawingArea(tk.LabelFrame):
         self.canvas.bind("<ButtonRelease-1>", self.mouse1release)
         self.canvas.grid(column=0, row=0, sticky="nsew")
 
+    def on_end_drawing(self):
+        self.clear_canvas()
+        pub(Event.END_DRAWING, self.points)
+        self.points = []
+
     def clear_canvas(self):
         self.canvas.delete("all")
         self.drawing = False
-        self.get_predictions()
-        self.points = []
-
-    def get_predictions(self):
-        features = self.pred.get_features(self.points)
-        result = self.pred.predict(features, 5)
-        pub(Event.PRED_COMPUTED, result)
 
 
-class TextArea(tk.LabelFrame):
+class PredictedTextView(tk.LabelFrame):
 
     def __init__(self, parent, **kwargs):
         super().__init__(parent, **kwargs)
         self.setup_textbox()
         sub(Event.PRED_SELECTED, lambda x: self.insert_text(x))
         sub(Event.START_DRAWING, lambda x: self.set_word_start())
-        sub(Event.PRED_COMPUTED, lambda x: self.on_predictions_computed(x))
+        sub(Event.PRED_SETTED, lambda x: self.on_predictions_setted(x))
 
-    def on_predictions_computed(self, preds):
+    def on_predictions_setted(self, preds):
         self.insert_text(preds[0])
         self.set_word_end()
 
@@ -107,12 +107,12 @@ class TextArea(tk.LabelFrame):
 
 
 # the top-n predictions for correction
-class PredictionArea(tk.LabelFrame):
+class CorrectionsView(tk.LabelFrame):
     def __init__(self, parent, **kwargs):
         super().__init__(parent, **kwargs)
         self.buttons = []
         self.setup_predictions(5)
-        sub(Event.PRED_COMPUTED, lambda x: self.update_buttons(x))
+        sub(Event.PRED_SETTED, lambda x: self.update_buttons(x))
 
     def setup_predictions(self, n):
         for i in range(n):

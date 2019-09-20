@@ -1,15 +1,16 @@
 import tkinter as tk
-from hwr.app.widgets import *
-from hwr.app.pred_interface import ONNETpred
+from hwr.app.views import *
+from hwr.app.model import ONNETpred, Model
 
 
 # Overall layout
 class App(tk.Frame):
     def __init__(self, root, *args, **kwargs):
         tk.Frame.__init__(self, root, *args, **kwargs)
-        text_area = TextArea(root, text="Text", width=50, height=40, padx=3, pady=3)
-        pred_area = PredictionArea(root, text="Correction", width=450, height=50, pady=3)
-        draw_area = DrawingArea(root, ONNETpred, text="Writing area", width=450, height=200, padx=3, pady=3)
+        model = Model(ONNETpred)
+        text_area = PredictedTextView(root, text="Text", width=50, height=40, padx=3, pady=3)
+        pred_area = CorrectionsView(root, text="Correction", width=450, height=50, pady=3)
+        draw_area = WritingPadView(root, text="Writing area", width=450, height=200, padx=3, pady=3)
 
         root.grid_rowconfigure(0, weight=1)
         root.grid_columnconfigure(0, weight=1)

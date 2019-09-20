@@ -3,6 +3,31 @@ from hwr.data.datarep import Point, PointSet
 from hwr.constants import ON
 import numpy as np
 from hwr.models.ONNET import ONNET
+from hwr.app.pubsub import pub, sub
+from hwr.app.event import Event
+
+
+class Model:
+    def __init__(self, pred):
+        self.pred = pred()
+        self._predictions = []
+        self._points = []
+        sub(Event.END_DRAWING, lambda x: self.compute_predictions(x))
+
+    def set_predictions(self, predictions):
+        self._predictions = predictions
+        pub(Event.PRED_SETTED, predictions)
+
+    def set_points(self, points):
+        self._points = points
+        pub(Event.POINT_SETTED, points)
+
+    def compute_predictions(self, points):
+        self.set_points(points)
+        features = self.pred.get_features(self._points)
+        predictions = self.pred.predict(features, 5)
+        self.set_predictions(predictions)
+        return predictions
 
 
 # Implement and pass to draw area constructor for prediction algorithm.
