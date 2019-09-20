@@ -1,9 +1,12 @@
-from tqdm import tqdm
-import os, sys
+import os
+from argparse import ArgumentParser
+
 import numpy as np
+from tqdm import tqdm
+
 from hwr.constants import ON, SPLIT
 from hwr.data.reader import IAMReader
-from argparse import ArgumentParser
+
 
 # Pre-create appropriate preprocessed data and features as npz file format to
 # save training time

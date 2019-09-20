@@ -1,7 +1,8 @@
 import tkinter as tk
 from tkinter import scrolledtext
-from hwr.app.pubsub import pub, sub
+
 from hwr.app.event import Event
+from hwr.app.pubsub import pub, sub
 
 
 # the drawing pad

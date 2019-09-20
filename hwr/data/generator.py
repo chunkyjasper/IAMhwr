@@ -1,10 +1,12 @@
 import random
+
 import numpy as np
 from tensorflow.keras.utils import Sequence
-from hwr.decoding.mlf import mlf2label, mlf2txt
-from hwr.data.reader import IAMReader, xmlpath2npypath
-from hwr.constants import SPLIT, ON
 from tqdm import tqdm
+
+from hwr.constants import SPLIT, ON
+from hwr.data.reader import IAMReader, xmlpath2npypath
+from hwr.decoding.mlf import mlf2label, mlf2txt
 
 
 # Generator of IAM-ON data for Keras model

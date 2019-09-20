@@ -1,5 +1,5 @@
-from enum import Enum
 import os
+from enum import Enum
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__)) + "/"
 

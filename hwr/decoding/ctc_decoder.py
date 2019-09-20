@@ -9,7 +9,7 @@ from tensorflow.python.ops import ctc_ops as ctc
 from tensorflow.python.ops import sparse_ops, math_ops, array_ops
 from tqdm import tqdm
 
-from hwr.constants import ON, BASE_DIR
+from hwr.constants import ON
 from hwr.decoding.mlf import label2txt
 from hwr.decoding.trie import Trie
 from hwr.decoding.trie_beam_search import trie_beam_search

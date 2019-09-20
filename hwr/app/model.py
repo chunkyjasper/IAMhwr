@@ -1,12 +1,15 @@
 import abc
-from hwr.data.datarep import Point, PointSet
-from hwr.constants import ON
+
 import numpy as np
-from hwr.models.ONNET import ONNET
-from hwr.app.pubsub import pub, sub
+
 from hwr.app.event import Event
+from hwr.app.pubsub import pub, sub
+from hwr.constants import ON
+from hwr.data.datarep import Point, PointSet
+from hwr.models.ONNET import ONNET
 
 
+# Data for application
 class Model:
     def __init__(self, pred):
         self.pred = pred()
@@ -59,10 +62,10 @@ class ONNETpred(IPred):
             for x, y in stroke:
                 points.append(Point(i, 0, x, y))
         pointset = PointSet(points=points)
-        #pointset.plot_strokes()
+        # pointset.plot_strokes()
         scheme = ON.PREPROCESS.SCHEME6
         pointset.preprocess(**scheme)
-        #pointset.plot_strokes()
+        # pointset.plot_strokes()
         print(pointset)
         return pointset.generate_features(add_pad=10)
 

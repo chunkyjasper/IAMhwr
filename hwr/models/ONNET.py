@@ -1,10 +1,11 @@
-from tensorflow.keras.layers import Conv1D, AveragePooling1D, Input, Dense, Activation, \
-    GRU, CuDNNGRU, LSTM, \
-    Lambda, BatchNormalization
-from tensorflow.keras.layers import add, concatenate
-from tensorflow.keras.models import Model
 from tensorflow.keras import backend as K
+from tensorflow.keras.layers import Conv1D, AveragePooling1D, Input, Dense, Activation, \
+    CuDNNGRU, LSTM, \
+    Lambda, BatchNormalization
+from tensorflow.keras.layers import concatenate
+from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import SGD
+
 from hwr.constants import ON, PRETRAINED
 from hwr.models.model import HWRModel
 

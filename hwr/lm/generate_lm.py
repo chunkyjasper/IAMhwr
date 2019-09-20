@@ -1,14 +1,14 @@
+import io
+import re
 from collections import defaultdict
 
-from nltk.util import ngrams
-import io
-from hwr.constants import BASE_DIR
-import re
-from nltk.probability import FreqDist, ConditionalFreqDist
-from nltk.lm import NgramCounter
 import dill as pickle
+from nltk.lm import NgramCounter
+from nltk.probability import FreqDist, ConditionalFreqDist
+from nltk.util import ngrams
 from tqdm import tqdm
 
+from hwr.constants import BASE_DIR
 
 
 def clean_space(txt):

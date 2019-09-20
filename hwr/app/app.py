@@ -1,19 +1,23 @@
-import tkinter as tk
-from hwr.app.views import *
 from hwr.app.model import ONNETpred, Model
+from hwr.app.views import *
+import tkinter as tk
 
 
 # Overall layout
-class App(tk.Frame):
-    def __init__(self, root, *args, **kwargs):
-        tk.Frame.__init__(self, root, *args, **kwargs)
-        model = Model(ONNETpred)
-        text_area = PredictedTextView(root, text="Text", width=50, height=40, padx=3, pady=3)
-        pred_area = CorrectionsView(root, text="Correction", width=450, height=50, pady=3)
-        draw_area = WritingPadView(root, text="Writing area", width=450, height=200, padx=3, pady=3)
+class App(tk.Tk):
+    def __init__(self, *args, **kwargs):
+        super(App, self).__init__(*args, **kwargs)
 
-        root.grid_rowconfigure(0, weight=1)
-        root.grid_columnconfigure(0, weight=1)
+        self.title('On-line hadnwriting recognition')
+        self.geometry('{}x{}'.format(1024, 768))
+
+        model = Model(ONNETpred)
+        text_area = PredictedTextView(self, text="Text", width=50, height=40, padx=3, pady=3)
+        pred_area = CorrectionsView(self, text="Correction", width=450, height=50, pady=3)
+        draw_area = WritingPadView(self, text="Writing area", width=450, height=200, padx=3, pady=3)
+
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
 
         text_area.grid(row=0, sticky="nsew")
         pred_area.grid(row=1, sticky="ew")
@@ -25,14 +29,12 @@ class App(tk.Frame):
         draw_area.grid_columnconfigure(0, weight=1)
         draw_area.grid_rowconfigure(0, weight=1)
 
+    def run(self):
+        self.mainloop()
+
 
 def main():
-    root = tk.Tk()
-    root.title('online handwriting recognition')
-    root.geometry('{}x{}'.format(1024, 768))
-    app = App(root)
-    app.grid(sticky="nsew")
-    root.mainloop()
+    App().run()
 
 
 if __name__ == "__main__":

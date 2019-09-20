@@ -1,11 +1,12 @@
 import os
 from decimal import Decimal
 
+import numpy as np
+from lxml import etree
+
 from hwr.constants import ON, SPLIT
 from hwr.data.datarep import PointSet, Point
 from hwr.decoding.mlf import mlf2txt
-import numpy as np
-from lxml import etree
 
 
 # A sample from the IAM online database

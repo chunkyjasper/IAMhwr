@@ -1,9 +1,11 @@
-import numpy as np
+from itertools import cycle
+
 import matplotlib.collections as mcoll
 import matplotlib.path as mpath
+import numpy as np
 from matplotlib import pyplot as plt
 from pylab import rcParams
-from itertools import cycle
+
 
 # Data representation and preprocessing
 
