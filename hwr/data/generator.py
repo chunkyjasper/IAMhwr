@@ -4,7 +4,7 @@ import numpy as np
 from tensorflow.keras.utils import Sequence
 from tqdm import tqdm
 
-from hwr.constants import SPLIT, ON
+from hwr.constants import SPLIT, PREPROCESS
 from hwr.data.reader import IAMReader, xmlpath2npypath
 from hwr.decoding.mlf import mlf2label, mlf2txt
 
@@ -23,9 +23,10 @@ class IAMSequence(Sequence):
         self.xs = []
         self.ys = []
 
+        # Load features from npz or preprocess from scratch
         if not self.npz:
             print("Not using npz. Data preprocessing may take some time.")
-            preprocess_scheme = getattr(ON.PREPROCESS, "SCHEME" + str(preprocess))
+            preprocess_scheme = getattr(PREPROCESS, "SCHEME" + str(preprocess))
             self.xs = np.asarray([s.generate_features(preprocess_scheme) for s in tqdm(self.samples)])
             self.ys = np.asarray([s.ground_truth for s in self.samples])
 
@@ -116,6 +117,7 @@ class IAMSequence(Sequence):
     def on_epoch_end(self):
         np.random.shuffle(self.indices)
 
+    # Get xs and ys which match the current permutation defined by indices
     def get_xy(self):
         xs = [self.xs[idx] for idx in self.indices]
         ys = mlf2txt([self.ys[idx] for idx in self.indices], multiple=True)

@@ -4,7 +4,7 @@ import numpy as np
 
 from hwr.app.event import Event
 from hwr.app.pubsub import pub, sub
-from hwr.constants import ON
+from hwr.constants import PREPROCESS
 from hwr.data.datarep import Point, PointSet
 from hwr.models.ONNET import ONNET
 
@@ -33,7 +33,7 @@ class Model:
         return predictions
 
 
-# Implement and pass to draw area constructor for prediction algorithm.
+# Interface for prediction algorithm.
 class IPred(object):
     def __init__(self):
         __metaclass__ = abc.ABCMeta
@@ -63,7 +63,7 @@ class ONNETpred(IPred):
                 points.append(Point(i, 0, x, y))
         pointset = PointSet(points=points)
         # pointset.plot_strokes()
-        scheme = ON.PREPROCESS.SCHEME6
+        scheme = PREPROCESS.SCHEME6
         pointset.preprocess(**scheme)
         # pointset.plot_strokes()
         print(pointset)

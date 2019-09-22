@@ -4,7 +4,7 @@ from decimal import Decimal
 import numpy as np
 from lxml import etree
 
-from hwr.constants import ON, SPLIT
+from hwr.constants import SPLIT, PATH, DATA
 from hwr.data.datarep import PointSet, Point
 from hwr.decoding.mlf import mlf2txt
 
@@ -16,16 +16,20 @@ class Sample(object):
         self.ground_truth = ground_truth
         self.__pointset = None
 
-    def generate_features(self, preprocess=ON.PREPROCESS.CURRENT_SCHEME):
+    def generate_features(self, preprocess):
         return self.pointset.generate_features(preprocess=preprocess)
 
     # plot the sample
     def visualize(self):
-        self.pointset.plot_samples()
+        self.pointset.plot_points()
 
     # Ground truth in readable form
     def get_ground_truth_text(self):
         return mlf2txt(self.ground_truth)
+
+    @property
+    def name(self):
+        return self.xml_path.split("/")[-1][:-4]
 
     # Read data in xml file into PointSet object
     @property
@@ -70,12 +74,16 @@ class Sample(object):
                 points.append(Point(*s))
         return PointSet(points=points, w=r - l, h=b - u, file_name=self.xml_path)
 
+    def __repr__(self):
+        return "<Sample of name={}>".format(self.name)
+
 
 # load samples given the data directory and a split (e.g. train, test)
 class IAMReader(object):
 
-    def __init__(self, split, data_path=ON.PATH.DATA_DIR):
+    def __init__(self, split, data_path=PATH.DATA_DIR):
         self.data_path = data_path
+        self.line_data_path = data_path + "lineStrokes(on)/"
         self.split = split
         self.samples = None
 
@@ -99,9 +107,9 @@ class IAMReader(object):
         return [line.strip(' \n') for line in f]
 
     # Given samples name e.g. ['a02-050',], return samples with path to data and ground truth.
-    def __get_samples_from_name(self, names, blacklist=ON.DATA.BLACKLIST):
+    def __get_samples_from_name(self, names, blacklist=DATA.BLACKLIST):
         # File of ground truth of each sample
-        f = open(self.data_path + "lines/t2_labels.mlf")
+        f = open(self.line_data_path + "t2_labels.mlf")
 
         samples = []
         curr_path = ""
@@ -132,7 +140,7 @@ class IAMReader(object):
                 fn_split = file_name.split('-')
                 path = fn_split[0] + "/" + fn_split[0] + "-" + fn_split[1][:3] + \
                        "/" + file_name + ".xml"
-                path = self.data_path + 'lines/data/' + path
+                path = self.line_data_path + "data/" + path
 
                 # if corrupted file/not found, pass
                 try:
@@ -150,6 +158,9 @@ class IAMReader(object):
                 curr_gt.append(line_split)
         return samples
 
+
+    def __repr__(self):
+        return "<IAMReader of split=\"{}\">".format(self.split)
 
 def xmlpath2npypath(path, npz_dir):
     f_split = path.split('/')

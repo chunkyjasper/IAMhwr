@@ -5,7 +5,7 @@ import matplotlib.path as mpath
 import numpy as np
 from matplotlib import pyplot as plt
 from pylab import rcParams
-
+from copy import deepcopy
 
 # Data representation and preprocessing
 
@@ -19,6 +19,9 @@ class PointSet:
         self.file_name = file_name
         self.gt = gt
 
+    def get_copy(self):
+        return deepcopy(self)
+
     def add_point(self, point):
         self.points.append(point)
             
@@ -28,6 +31,15 @@ class PointSet:
     def get_stroke_group(self):
         strokes_n = set([p.stroke for p in self.points])
         return [[p for p in self.points if p.stroke == n] for n in strokes_n]
+
+    def get_all_points(self):
+        groups = self.get_stroke_group()
+        x, y = [], []
+        for g in groups:
+            x = [p.x for p in g]
+            y = [p.y for p in g]
+        return x, y
+
 
     def get_lines(self):
         lines = []
@@ -109,7 +121,7 @@ class PointSet:
                     removed = 0
                     ret.append(s[i])
                 else:
-                    cs = Line(s[i], s[i - 1 - removed]).cosine_similarity(Line(s[i + 1], s[i]))
+                    cs = Line(s[i - 1 - removed], s[i]).cosine_similarity(Line(s[i], s[i + 1]))
                     if cs < cos_th:
                         removed = 0
                         ret.append(s[i])
@@ -124,7 +136,6 @@ class PointSet:
         for s in strokes:
             if len(s) > 0:
                 ret.append(s[0])
-
             for i in range(1, len(s)):
                 line = Line(ret[-1], s[i])
                 l = line.length()
@@ -163,13 +174,14 @@ class PointSet:
         x = np.array([p.x for p in self.points])
         y = np.array([p.y for p in self.points])
         best_fit = np.poly1d(np.polyfit(x, y, 1))
-        rad = np.arctan2(best_fit(x[-1]) - best_fit(x[0]), x[-1] - x[0])
-        x_mid = (x[-1] + x[0]) / 2
+        x_max, x_min = np.max(x), np.min(x)
+        rad = np.arctan2(best_fit(x_max) - best_fit(x_min), x_max - x_min)
+        x_mid = (x_max + x_min) / 2
         pivot_x, pivot_y = x_mid, best_fit(x_mid)
         co = homogeneous_co(x, y)
-        co = np.matmul(co, translation_matrix(-pivot_x, -pivot_y))
+        #co = np.matmul(co, translation_matrix(-pivot_x, -pivot_y))
         co = np.matmul(co, rotation_matrix(rad))
-        co = np.matmul(co, translation_matrix(pivot_x, pivot_y))
+        #co = np.matmul(co, translation_matrix(pivot_x, pivot_y))
         for i in range(len(co)):
             self.points[i].x, self.points[i].y = co[i][0], co[i][1]
         return self.points
@@ -226,7 +238,17 @@ class PointSet:
 
         return self.sample_size()
 
-    def plot_samples(self):
+    def plot_points(self):
+        rcParams['figure.figsize'] = 10, 10
+        groups = self.get_stroke_group()
+        for g in groups:
+            x = [p.x for p in g]
+            y = [-p.y for p in g]
+            plt.plot(x, y, '.', linewidth=2, color=(0, 0, 0))
+        plt.gca().set_aspect('equal', adjustable='box')
+        plt.show()
+
+    def plot_points_with_lines(self):
         rcParams['figure.figsize'] = 10, 10
         groups = self.get_stroke_group()
         for g in groups:
@@ -276,7 +298,7 @@ class PointSet:
         plt.show()
 
     def plot_both(self):
-        self.plot_samples()
+        self.plot_points()
         self.plot_strokes()
 
     def __repr__(self):
@@ -316,6 +338,9 @@ class Line:
 
     def vec(self):
         return self.p2.coordinates() - self.p1.coordinates()
+
+    def normalized_vec(self):
+        return self.vec() / self.length()
 
     def length(self):
         return np.linalg.norm(self.vec())
@@ -362,7 +387,7 @@ class Line:
         direction_x, direction_y = self.vec() / length
         down = not self.eos
         up = self.eos
-        return np.array([x_start, y_start, direction_x, direction_y, length, down, up])
+        return np.array([x_start, y_start, direction_x, direction_y, down, up])
 
     def __repr__(self):
         return "<Line\n" + self.p1.__repr__() + '\n' + self.p2.__repr__() + '\n>'

@@ -4,7 +4,7 @@ from argparse import ArgumentParser
 import numpy as np
 from tqdm import tqdm
 
-from hwr.constants import ON, SPLIT
+from hwr.constants import SPLIT, PREPROCESS
 from hwr.data.reader import IAMReader
 
 
@@ -15,7 +15,7 @@ from hwr.data.reader import IAMReader
 
 
 def save_npz(preprocess_no):
-    preprocess = getattr(ON.PREPROCESS, "SCHEME" + str(preprocess_no))
+    preprocess = getattr(PREPROCESS, "SCHEME" + str(preprocess_no))
     reader = IAMReader(SPLIT.ALL)
     samples = reader.get_samples()
     bad_samples = []

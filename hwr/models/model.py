@@ -6,21 +6,21 @@ import tensorflow as tf
 from tensorflow.keras.models import Model
 from tensorflow.keras.utils import Sequence
 
-from hwr.constants import PRETRAINED, ON
+from hwr.constants import PRETRAINED, DATA, PATH
 from hwr.decoding.ctc_decoder import TrieBeamSearchDecoder
 from hwr.models.metrics import character_error_rate
 
 
 # Interface for prediction model
 class HWRModel(object):
-    def __init__(self, chars=ON.DATA.CHARS, preload=False,
+    def __init__(self, chars=DATA.CHARS, preload=False,
                  decoder=None):
         __metaclass__ = abc.ABCMeta
         if decoder is None:
             self.decoder = TrieBeamSearchDecoder(beam_width=25)
         self.chars = chars
         self.class_name = type(self).__name__
-        self.ckptdir = ON.PATH.CKPT_DIR + self.class_name + "/"
+        self.ckptdir = PATH.CKPT_DIR + self.class_name + "/"
         self.char_size = len(chars) + 1
         self.model = self.get_model_conf()
         self.compile()
@@ -54,7 +54,6 @@ class HWRModel(object):
                          outputs=self.model.get_layer(layer_name).output)
         # dummy loss and optimizer, predict with Sequence class requires compiled
         in_model.compile(loss={layer_name: lambda y_true, y_pred: y_pred}, optimizer='adam')
-
         return in_model
 
     def get_pred_model(self):
@@ -69,7 +68,6 @@ class HWRModel(object):
                                                          save_best_only=True,
                                                          verbose=1)
         es_callback = tf.keras.callbacks.EarlyStopping(patience=earlystop)
-        # TODO: add callback to save evaluation metrics/graphs
         self.model.fit_generator(
             generator=train_seq,
             validation_data=test_seq,

@@ -6,7 +6,7 @@ from tensorflow.keras.layers import concatenate
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import SGD
 
-from hwr.constants import ON, PRETRAINED
+from hwr.constants import PRETRAINED, DATA
 from hwr.models.model import HWRModel
 
 
@@ -96,8 +96,8 @@ class ONNET(HWRModel):
         return "xs"
 
     def get_optimizer(self):
-        return SGD(lr=1e-6, momentum=0.9, nesterov=True, clipnorm=5)
-        #return 'adam'
+        # return SGD(lr=1e-6, momentum=0.9, nesterov=True, clipnorm=5)
+        return 'adam'
 
     def get_loss(self):
         return {'ctc': lambda y_true, y_pred: y_pred}
@@ -107,24 +107,24 @@ class ONNET(HWRModel):
         inputs = Input(shape=input_shape, dtype='float32', name='xs')
         inner = inputs
 
-        inner = cnn_bn_relu(inner, 60, 7)
-        inner = cnn_bn_relu(inner, 80, 5)
-        inner = cnn_bn_relu(inner, 100, 5)
+        inner = tdnn_bn_relu(inner, 60, 7)
+        inner = tdnn_bn_relu(inner, 80, 5)
+        inner = tdnn_bn_relu(inner, 100, 5)
         inner = AveragePooling1D(pool_size=2)(inner)
 
-        inner = cnn_bn_relu(inner, 100, 3)
-        inner = cnn_bn_relu(inner, 130, 3)
-        inner = cnn_bn_relu(inner, 160, 3)
+        inner = tdnn_bn_relu(inner, 100, 3)
+        inner = tdnn_bn_relu(inner, 130, 3)
+        inner = tdnn_bn_relu(inner, 160, 3)
 
         inner = AveragePooling1D(pool_size=2)(inner)
 
         # No significant difference between gru and lstm
-        inner = self.bi_gru(inner, 80)
-        inner = self.bi_gru(inner, 80)
+        inner = self.bi_rnn(inner, 80)
+        inner = self.bi_rnn(inner, 80)
 
         inner = BatchNormalization()(inner)
 
-        inner = Dense(ON.DATA.CHARS_SIZE, kernel_initializer='he_normal')(inner)
+        inner = Dense(DATA.CHARS_SIZE, kernel_initializer='he_normal')(inner)
         y_pred = Activation('softmax', name='softmax')(inner)
 
         # parameters for CTC loss, fed as network input
@@ -144,16 +144,16 @@ class ONNET(HWRModel):
         y_pred, labels, input_length, label_length = args
         return K.ctc_batch_cost(labels, y_pred, input_length, label_length)
 
-    def bi_gru(self, inner, hidden_unit):
-        gru_1a = self.rnn(hidden_unit, return_sequences=True,
+    def bi_rnn(self, inner, hidden_unit):
+        rnn_a = self.rnn(hidden_unit, return_sequences=True,
                       kernel_initializer='he_normal')(inner)
-        gru_1b = self.rnn(hidden_unit, return_sequences=True,
+        rnn_b = self.rnn(hidden_unit, return_sequences=True,
                       go_backwards=True, kernel_initializer='he_normal')(inner)
-        gru1_merged = concatenate([gru_1a, gru_1b])
-        return gru1_merged
+        rnn_merged = concatenate([rnn_a, rnn_b])
+        return rnn_merged
 
 
-def cnn_bn_relu(inner, filters, kernel_size):
+def tdnn_bn_relu(inner, filters, kernel_size):
     inner = Conv1D(filters, kernel_size, padding="same", kernel_initializer='he_normal')(inner)
     inner = BatchNormalization()(inner)
     inner = Activation('relu')(inner)

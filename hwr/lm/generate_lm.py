@@ -8,7 +8,7 @@ from nltk.probability import FreqDist, ConditionalFreqDist
 from nltk.util import ngrams
 from tqdm import tqdm
 
-from hwr.constants import BASE_DIR
+from hwr.constants import PATH
 
 
 def clean_space(txt):
@@ -89,7 +89,7 @@ if __name__ == "__main__":
     for p in range(1, 100):
         print("file {}".format(p))
         fnum = "0000" + str(p) if p < 10 else "000" + str(p)
-        fn = BASE_DIR + '../data/1blm/training-monolingual.tokenized.shuffled/news.en-' + fnum + '-of-00100'
+        fn = PATH.BASE_DIR + '../data/1blm/training-monolingual.tokenized.shuffled/news.en-' + fnum + '-of-00100'
         counter = update_counter(counter, ngram, fn)
 
     with open(fname, 'wb') as fout:

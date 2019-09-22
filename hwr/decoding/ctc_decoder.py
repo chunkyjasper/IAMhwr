@@ -9,7 +9,7 @@ from tensorflow.python.ops import ctc_ops as ctc
 from tensorflow.python.ops import sparse_ops, math_ops, array_ops
 from tqdm import tqdm
 
-from hwr.constants import ON
+from hwr.constants import DATA, PATH
 from hwr.decoding.mlf import label2txt
 from hwr.decoding.trie import Trie
 from hwr.decoding.trie_beam_search import trie_beam_search
@@ -37,7 +37,7 @@ class BestPathDecoder(ICTCDecoder):
         super(BestPathDecoder, self).__init__()
 
     def decode(self, rnn_out, top_n):
-        pred = best_path(rnn_out)
+        pred = best_path_tensor(rnn_out)
         return list(map(lambda p: [p for _ in range(top_n)], pred))
 
 
@@ -47,7 +47,7 @@ class BeamSearchDecoder(ICTCDecoder):
         self.beam_width = beam_width
 
     def decode(self, rnn_out, top_n):
-        return beam_search(rnn_out, self.beam_width, top_paths=top_n)
+        return beam_search_tensor(rnn_out, self.beam_width, top_paths=top_n)
 
 
 # See trie_beam_search.py
@@ -60,10 +60,10 @@ class TrieBeamSearchDecoder(ICTCDecoder):
         self.lm_order = lm_order
         if lm is None:
             self.lm_order = 5
-            self.lm = load_lm(self.lm_order, ON.PATH.LM_DATA_DIR + "5gram_counter_pruned-100.pkl")
+            self.lm = load_lm(self.lm_order, PATH.LM_DATA_DIR + "5gram_counter_pruned-100.pkl")
         self.trie = trie
         if trie is None:
-            self.trie = load_trie(ON.PATH.LM_DATA_DIR + "wiki-100k.txt")
+            self.trie = load_trie(PATH.LM_DATA_DIR + "wiki-100k.txt")
 
     def decode(self, rnn_out, top_n):
         return trie_beam_search(rnn_out, self.lm, self.trie,
@@ -76,7 +76,7 @@ def load_trie(file_path):
         vocab_txt = fin.read().splitlines()
     # vocabs to lowercase and remove ones with illegal chars
     vocab_txt = [v.lower() for v in vocab_txt if v[:2] != "#!"]
-    vocab_txt = [v for v in vocab_txt if all([c in ON.DATA.CHARS for c in v])]
+    vocab_txt = [v for v in vocab_txt if all([c in DATA.CHARS for c in v])]
     t = Trie()
     t.mass_insert(vocab_txt)
     return t
@@ -85,11 +85,11 @@ def load_trie(file_path):
 def load_lm(order, counter_file_path):
     with open(counter_file_path, 'rb') as fin:
         counter = pickle.load(fin)
-    chars = Vocabulary(ON.DATA.CHARS)
+    chars = Vocabulary(DATA.CHARS)
     return KneserNeyBackoff(order, backoff=0.4, counter=counter, vocabulary=chars)
 
-
-def best_path_raw(rnn_out, remove_dup=True):
+# Get max p across all labels at each timestep
+def best_path(rnn_out, remove_dup=True):
     ret = []
     for i in range(len(rnn_out)):
         ret.append([np.argmax(row) for row in rnn_out[i]])
@@ -97,7 +97,7 @@ def best_path_raw(rnn_out, remove_dup=True):
 
 
 # Greedy search. Just pick the most probable candidate at each time step.
-def best_path(rnn_out):
+def best_path_tensor(rnn_out):
     result_list, _ = ctc_decode(rnn_out, np.ones(rnn_out.shape[0]) * rnn_out.shape[1])
     result_list = K.eval(result_list[0])
     pred = label2txt(result_list, multiple=True)
@@ -106,7 +106,7 @@ def best_path(rnn_out):
 
 # Beam search. Keep track of the best n 'beam' per timestep
 # And calculate the prob of them to find the most probable sequence.
-def beam_search(rnn_out, beam_width, top_paths=1):
+def beam_search_tensor(rnn_out, beam_width, top_paths=1):
     _EPSILON = 1e-7
     num_of_samples = rnn_out.shape[0]
     input_length = np.ones(num_of_samples) * rnn_out.shape[1]
@@ -125,7 +125,7 @@ def beam_search(rnn_out, beam_width, top_paths=1):
             st.indices, st.dense_shape, st.values, default_value=-1)
         for st in decoded
     ]
-    candidates = [K.eval(i) for i in tqdm(decoded_dense)]
+    candidates = [K.eval(i) for i in decoded_dense]
 
     pred = [[] for _ in range(num_of_samples)]
     for k in range(num_of_samples):

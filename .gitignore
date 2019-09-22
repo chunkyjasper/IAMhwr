@@ -121,29 +121,26 @@ dmypy.json
 # notebooks
 notebooks/
 
+data/*
+!data/1blm/*
+!data/iamon
+#Keep corpus example
+data/lblm/*
+!data/1blm/corpus_example.txt
+#
+
 # Datas
 data/iamoff/
-
+data/iamon/lineStrokes(on)/npz-6/*
 # Keep some examples
-data/iamon/lines/npz*
-data/iamon/lines/data/*
-!data/iamon/lines/data/f07/f07-412/
-!data/iamon/lines/data/j06/j06-294/
-!data/iamon/lines/data/l02/l02-188/
-!data/iamon/lines/data/m05/m05-507/
-!data/iamon/lines/data/p01/p01-056/
-!data/iamon/lines/data/r03/r03-254/
-!data/iamon/lines/data/b04/b04-334/
-!data/iamon/lines/data/d06/d06-414/
-!data/iamon/lines/data/f07/f07-431/
-!data/iamon/lines/data/j06/j06-312/
-!data/iamon/lines/data/l02/l02-209/
-!data/iamon/lines/data/m05/m05-538/
-!data/iamon/lines/data/p01/p01-084/
-!data/iamon/lines/data/r04/r04-276/
+data/iamon/lineStrokes(on)/data/*
+!data/iamon/lineStrokes(on)/data/m05/m05-507/*
+!data/iamon/lineStrokes(on)/data/b04/b04-334/*
+!data/iamon/lineStrokes(on)/data/d06/d06-414/*
+
 # corpus
 data/1blm
-!data/1blm/corpus_example.txt
+
 # language model counter pickle
 data/lm/*
 !data/lm/lm_5gramchar_counter_pruned-100.pkl
