@@ -1,5 +1,4 @@
 import os
-from enum import Enum
 
 
 class PATH:
@@ -135,6 +134,8 @@ PRETRAINED = {
     "ONNET": PATH.MODEL_DIR + "ONNET/pretrained/weights.h5",
     "ONNET-LSTM": PATH.MODEL_DIR + "ONNET/pretrained-lstm/weights.h5",
 }
+
+
 
 LINE_BLACKLIST = ["h02-037-02",  # corrupted stroke
                   "a02-062-01",  # 1263

@@ -91,8 +91,23 @@ class HWRModel(object):
         softmaxs = self.predict_softmax(x)
         pred = decoder.decode(rnn_out=softmaxs, top_n=top)
         if top == 1:
-            pred = [p[0] for p in pred]
+            try:
+                pred = [p[0] for p in pred]
+            except IndexError:
+                print("Index Error: {}".format(pred))
         return pred
+
+    def evaluate(self, eval_seq, metrics=None, decoder=None):
+        if metrics is None:
+            metrics = [character_error_rate]
+        if decoder is None:
+            decoder = self.decoder
+        _, y_true = eval_seq.get_xy()
+        y_pred = self.predict(eval_seq, decoder=decoder)
+        ret = {}
+        for m in metrics:
+            ret[m.__name__] = m(y_true, y_pred)
+        return ret
 
     # Keras cannot save custom loss and keras optimizer, so have to recompile after loading
     def compile(self):
@@ -115,17 +130,7 @@ class HWRModel(object):
     def get_model_summary(self):
         return self.model.summary()
 
-    def evaluate(self, eval_seq, metrics=None, decoder=None):
-        if metrics is None:
-            metrics = [character_error_rate]
-        if decoder is None:
-            decoder = self.decoder
-        _, y_true = eval_seq.get_xy()
-        y_pred = self.predict(eval_seq, decoder=decoder)
-        ret = {}
-        for m in metrics:
-            ret[m.__name__] = m(y_true, y_pred)
-        return ret
+
 
 
 # get timestamp

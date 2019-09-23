@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import scrolledtext
 
 from hwr.app.event import Event
-from hwr.app.pubsub import pub, sub
+from hwr.app.pubsub import pub
 
 
 # the drawing pad
@@ -18,13 +18,14 @@ class WritingPadView(tk.LabelFrame):
         self.after_list = []
         self.curr_stroke = 0
         self.points = []
+
         # View
         self.setup_canvas()
 
     def mouse1press(self, event):
         if not self.drawing:
             pub(Event.START_DRAWING, None)
-            # self.text_area.set_word_start()
+
         self.drawing = True
         self.btn1pressed = True
         self.xorig = event.x
@@ -75,9 +76,6 @@ class PredictedTextView(tk.LabelFrame):
     def __init__(self, parent, **kwargs):
         super().__init__(parent, **kwargs)
         self.setup_textbox()
-        sub(Event.PRED_SELECTED, lambda x: self.insert_text(x))
-        sub(Event.START_DRAWING, lambda x: self.set_word_start())
-        sub(Event.PRED_SETTED, lambda x: self.on_predictions_setted(x))
 
     def on_predictions_setted(self, preds):
         self.insert_text(preds[0])
@@ -113,7 +111,6 @@ class CorrectionsView(tk.LabelFrame):
         super().__init__(parent, **kwargs)
         self.buttons = []
         self.setup_predictions(5)
-        sub(Event.PRED_SETTED, lambda x: self.update_buttons(x))
 
     def setup_predictions(self, n):
         for i in range(n):

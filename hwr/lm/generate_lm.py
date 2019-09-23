@@ -80,6 +80,18 @@ def prune_counter(counter, order, threshold=10):
         new_counter._counts[i] = prune_cond_dist(counter[i], threshold=threshold)
     return new_counter
 
+def get_ngram_count(counter, order):
+    s = 0
+    for i in range(order):
+        s += len(counter[i])
+    return s
+
+def get_subset_from_counter(counter, order):
+    new_counter = NgramCounter()
+    for i in range(order):
+        new_counter._counts[i] = counter[i]
+    return new_counter
+
 
 ngram = 7
 fname = "lm_7gram_counter.pkl"

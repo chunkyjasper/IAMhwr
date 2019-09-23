@@ -7,13 +7,12 @@ from tensorflow.keras import backend as K
 from tensorflow.keras.backend import ctc_decode
 from tensorflow.python.ops import ctc_ops as ctc
 from tensorflow.python.ops import sparse_ops, math_ops, array_ops
-from tqdm import tqdm
 
 from hwr.constants import DATA, PATH
 from hwr.decoding.mlf import label2txt
 from hwr.decoding.trie import Trie
 from hwr.decoding.trie_beam_search import trie_beam_search
-from hwr.lm.lm import KneserNeyBackoff
+from hwr.lm.lm import StupidBackoff, KneserNeyInterpolated
 
 
 # Interface for a CTC decoding algorithm
@@ -34,7 +33,7 @@ class ICTCDecoder:
 
 class BestPathDecoder(ICTCDecoder):
     def __init__(self):
-        super(BestPathDecoder, self).__init__()
+        super().__init__()
 
     def decode(self, rnn_out, top_n):
         pred = best_path_tensor(rnn_out)
@@ -43,7 +42,7 @@ class BestPathDecoder(ICTCDecoder):
 
 class BeamSearchDecoder(ICTCDecoder):
     def __init__(self, beam_width):
-        super(BeamSearchDecoder, self).__init__()
+        super().__init__()
         self.beam_width = beam_width
 
     def decode(self, rnn_out, top_n):
@@ -54,7 +53,7 @@ class BeamSearchDecoder(ICTCDecoder):
 class TrieBeamSearchDecoder(ICTCDecoder):
     def __init__(self, beam_width, lm=None, trie=None, lm_order=0):
 
-        super(TrieBeamSearchDecoder).__init__()
+        super().__init__()
         self.beam_width = beam_width
         self.lm = lm
         self.lm_order = lm_order
@@ -86,7 +85,8 @@ def load_lm(order, counter_file_path):
     with open(counter_file_path, 'rb') as fin:
         counter = pickle.load(fin)
     chars = Vocabulary(DATA.CHARS)
-    return KneserNeyBackoff(order, backoff=0.4, counter=counter, vocabulary=chars)
+    return StupidBackoff(order, counter=counter, vocabulary=chars)
+
 
 # Get max p across all labels at each timestep
 def best_path(rnn_out, remove_dup=True):

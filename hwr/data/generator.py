@@ -103,14 +103,17 @@ class IAMSequence(Sequence):
 
     # Get a random sample for demonstration/testing
     def random_sample(self, pad=10):
-        idx = random.randint(0, self.n)
+        idx = random.randint(0, self.n - 1)
+        return self.sample_at_idx(idx, pad=pad)
+
+    def sample_at_idx(self, idx, pad=10):
+        idx = self.indices[idx]
         pointset = self.samples[idx].pointset
         ground_truth = mlf2txt(self.samples[idx].ground_truth)
         network_input = self.xs[idx]
         network_input = pad_2d(self.xs[idx],
                                pad_to=network_input.shape[0] + pad,
                                pad_value=0)
-        # add dimension
         network_input = np.asarray([network_input])
         return network_input, ground_truth, pointset
 

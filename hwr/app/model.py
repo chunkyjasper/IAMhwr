@@ -15,7 +15,6 @@ class Model:
         self.pred = pred()
         self._predictions = []
         self._points = []
-        sub(Event.END_DRAWING, lambda x: self.compute_predictions(x))
 
     def set_predictions(self, predictions):
         self._predictions = predictions
@@ -62,10 +61,10 @@ class ONNETpred(IPred):
             for x, y in stroke:
                 points.append(Point(i, 0, x, y))
         pointset = PointSet(points=points)
-        # pointset.plot_strokes()
+        pointset.plot_strokes()
         scheme = PREPROCESS.SCHEME6
         pointset.preprocess(**scheme)
-        # pointset.plot_strokes()
+        pointset.plot_strokes()
         print(pointset)
         return pointset.generate_features(add_pad=10)
 

@@ -4,8 +4,7 @@
 class TrieNode(object):
     def __init__(self):
         self.children = {}
-        self.end = False
-        self.counter = 1
+        self.is_word = False
 
     def get_children_nodes(self):
         return list(self.children.values())
@@ -31,7 +30,7 @@ class Trie(object):
             # Move down the node
             curr = curr.children[c]
             if i == last:
-                curr.end = True
+                curr.is_word = True
         return self
 
     def mass_insert(self, words):
@@ -51,7 +50,7 @@ class Trie(object):
     def is_word(self, txt):
         node = self.search(txt)
         if node:
-            return node.end
+            return node.is_word
         else:
             return False
 
