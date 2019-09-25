@@ -12,7 +12,7 @@ from hwr.constants import DATA, PATH
 from hwr.decoding.mlf import label2txt
 from hwr.decoding.trie import Trie
 from hwr.decoding.trie_beam_search import trie_beam_search
-from hwr.lm.lm import StupidBackoff, KneserNeyInterpolated
+from hwr.lm.lm import StupidBackoff, KneserNeyInterpolated, KneserNeyBackoff
 
 
 # Interface for a CTC decoding algorithm
@@ -59,7 +59,7 @@ class TrieBeamSearchDecoder(ICTCDecoder):
         self.lm_order = lm_order
         if lm is None:
             self.lm_order = 5
-            self.lm = load_lm(self.lm_order, PATH.LM_DATA_DIR + "5gram_counter_pruned-100.pkl")
+            self.lm = load_lm(self.lm_order, PATH.LM_DATA_DIR + "5gram_counter_pruned-10.pkl")
         self.trie = trie
         if trie is None:
             self.trie = load_trie(PATH.LM_DATA_DIR + "wiki-100k.txt")
@@ -85,7 +85,8 @@ def load_lm(order, counter_file_path):
     with open(counter_file_path, 'rb') as fin:
         counter = pickle.load(fin)
     chars = Vocabulary(DATA.CHARS)
-    return StupidBackoff(order, counter=counter, vocabulary=chars)
+    # return KneserNeyInterpolated(order, counter=counter, vocabulary=chars)
+    return KneserNeyBackoff(order, backoff=0.4, counter=counter, vocabulary=chars)
 
 
 # Get max p across all labels at each timestep

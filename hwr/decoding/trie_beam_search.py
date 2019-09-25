@@ -5,41 +5,19 @@ from tqdm import tqdm
 
 from hwr.constants import DATA
 
-class Beam:
 
-    def __init__(self, root):
-        self.root = root
-        self.curr_node = root
-        self.text = ""
-        self.ptxt = 1
-
-    def is_word(self):
-        return self.curr_node.is_word
-
-    def end_in_non_alpha(self):
-        return self.text == "" or self.text[-1] in DATA.NON_ALPHAS
-
-    # Find character candidates that would eventually form a word, unless a word is already fored
-    def get_candidates(self):
-        candidates = self.curr_node.get_children_chars()
-        if self.is_word() or self.end_in_non_alpha():
-            candidates += [c.upper() for c in candidates]
-            candidates += DATA.NON_ALPHAS
-        candidates += "%"
-        return candidates
-
-    def extend(self, c, score_f):
-        new_beam = Beam(self.root)
-        if c in DATA.NON_ALPHAS:
-            new_beam.curr_node = self.root
+# get the ending alphabets given a word beam
+def get_ending_alphas(text):
+    end_alphas = ""
+    for i in reversed(range(len(text))):
+        if text[i].isalpha():
+            end_alphas = text[i] + end_alphas
         else:
-            new_beam.curr_node = self.curr_node.children[c.lower()]
-        new_beam.text = self.text + c
-        new_beam.ptxt = score_f(self.text + c)
-        return new_beam
+            break
+    return end_alphas
 
 
-# rnn_out has dimension [batch_size, timestep, num_of_chars]
+# sm has dimension [sample, timestep, num_of_chars]
 def trie_beam_search(rnn_out, lm, trie, bw, top_paths, lm_order, candidate_cap=5):
     return [__trie_beam_search(x, lm, trie, bw, top_paths, lm_order, candidate_cap) for x in tqdm(rnn_out)]
 
@@ -48,22 +26,32 @@ def __trie_beam_search(mat, lm, trie, bw, top_paths, lm_order, candidate_cap):
     # pb[t][beam]: P of {beam} at time {t} ending with blank '%'
     # pnb[t][beam]: P of {beam} at time {t} ending with any non blank chars
     # Ptxt[beam] : P of {beam} given a language model.
-    pb, pnb = defaultdict(Counter), defaultdict(Counter)
+    pb, pnb, ptxt = defaultdict(Counter), defaultdict(Counter), defaultdict(lambda: None)
     timestep, chars_size = mat.shape
     # add a time step 0 for P(t-1) at t=1
     mat = np.vstack((np.zeros(chars_size), mat))
-    empty_beam = Beam(trie.root)
-    pb[0][empty_beam] = 1
-    pnb[0][empty_beam] = 0
-    beams_prev = [empty_beam]
+    pb[0][''] = 1
+    pnb[0][''] = 0
+    ptxt[''] = 1
+    beams_prev = ['']
+
+    non_alphas = DATA.NON_ALPHAS
+    letters = DATA.CHARS
 
     for t in range(1, timestep + 1):
         for beam in beams_prev:
-            # Get candidates by looking at trie
-            candidates = beam.get_candidates()
+            # Get ending alphabet, try to form a word in the trie
+            ending_alphas = get_ending_alphas(beam).lower()
+            candidates = trie.get_char_candidates(ending_alphas)
+            # Allow uppercase and non alphabets only when a word is form/ not being formed
+            if trie.is_word(ending_alphas) or ending_alphas == "":
+                candidates += [c.upper() for c in candidates]
+                candidates += non_alphas
+            candidates += "%"
+
             # Check only top n candidates for performance
             if len(candidates) > candidate_cap:
-                candidates = sorted(candidates, key=lambda c: mat[t][DATA.CHARS.index(c)], reverse=True)[:candidate_cap]
+                candidates = sorted(candidates, key=lambda c: mat[t][letters.index(c)], reverse=True)[:candidate_cap]
 
             for char in candidates:
                 # if candidate is blank
@@ -73,24 +61,19 @@ def __trie_beam_search(mat, lm, trie, bw, top_paths, lm_order, candidate_cap):
 
                 # if candidate is non-blank
                 else:
-                    l_plus = beam.text + char
-                    letter_idx = DATA.CHARS.index(char)
-
-                    new_beam = next((b for b in beams_prev if b.text == l_plus), None)
-                    if not new_beam:
-                        if lm:
-                            score_f = lambda txt: lm.score(txt[-1].lower(), list(txt[-lm_order:-1].lower()))
-                        else:
-                            score_f = lambda txt: 1
-                        new_beam = beam.extend(char, score_f)
+                    new_beam = beam + char
+                    letter_idx = letters.index(char)
 
                     # Apply character level language model and calculate Ptxt(beam)
-
-                    # Ptxt(beam+c) = P(c|last n char in beam)
-                    # ptxt[new_beam] = lm.score(char.lower(), [p for p in prefix.lower()])
+                    prefix = beam[-(lm_order - 1):]
+                    if lm:
+                        # Ptxt(beam+c) = P(c|last n char in beam)
+                        ptxt[new_beam] = lm.score(char.lower(), [p for p in prefix.lower()])
+                    else:
+                        ptxt[new_beam] = 1
 
                     # if new candidate and last char in the beam is same
-                    if len(beam.text) > 0 and char == beam.text[-1]:
+                    if len(beam) > 0 and char == beam[-1]:
                         # Pnb(beam+c,t) += mat(c,t) * Pb(beam,t-1)
                         pnb[t][new_beam] += mat[t][letter_idx] * pb[t - 1][beam]
                         # Pnb(beam,t) = mat(c,t) * Pnb(beam,t-1)
@@ -98,18 +81,13 @@ def __trie_beam_search(mat, lm, trie, bw, top_paths, lm_order, candidate_cap):
                     else:
                         # Pnb(beam+c,t) = mat(c,t) * Ptotal(beam,t-1)
                         pnb[t][new_beam] += mat[t][letter_idx] * (pb[t - 1][beam] + pnb[t - 1][beam])
-        # TODO: fix
-        # bandaid fix for issue: When sequence is padded too long, sometimes Pb and Pnb reaches zero
-        if (pb[t] + pnb[t]) == Counter():
-            pb[t], pnb[t] = pb[t-1], pnb[t-1]
-
         Ptotal_t = pb[t] + pnb[t]
         # sort by Ptotal * Ptxt
-        sort = lambda k: Ptotal_t[k] * k.ptxt
+        sort = lambda k: Ptotal_t[k] * ptxt[k]
         # Top (bw) beams for next iteration
         beams_prev = sorted(Ptotal_t, key=sort, reverse=True)[:bw]
 
-    return [b.text for b in beams_prev[:top_paths]]
+    return beams_prev[:top_paths]
 
 
 

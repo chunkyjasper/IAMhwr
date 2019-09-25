@@ -8,14 +8,15 @@ from tensorflow.keras.utils import Sequence
 
 from hwr.constants import PRETRAINED, DATA, PATH
 from hwr.decoding.ctc_decoder import TrieBeamSearchDecoder
-from hwr.models.metrics import character_error_rate
+from hwr.models.metrics import character_error_rate, word_error_rate
 
 
 # Interface for prediction model
 class HWRModel(object):
-    def __init__(self, chars=DATA.CHARS, preload=False,
+    def __init__(self, chars=DATA.CHARS, preload_key=None,
                  decoder=None):
         __metaclass__ = abc.ABCMeta
+        self.decoder = decoder
         if decoder is None:
             self.decoder = TrieBeamSearchDecoder(beam_width=25)
         self.chars = chars
@@ -24,8 +25,8 @@ class HWRModel(object):
         self.char_size = len(chars) + 1
         self.model = self.get_model_conf()
         self.compile()
-        if preload:
-            self.pretrained = PRETRAINED[self.class_name]
+        if preload_key:
+            self.pretrained = PRETRAINED[preload_key]
             print("preloading model weights from {}".format(self.pretrained))
             self.load_weights(self.pretrained, full_path=True)
 
@@ -99,7 +100,7 @@ class HWRModel(object):
 
     def evaluate(self, eval_seq, metrics=None, decoder=None):
         if metrics is None:
-            metrics = [character_error_rate]
+            metrics = [character_error_rate, word_error_rate]
         if decoder is None:
             decoder = self.decoder
         _, y_true = eval_seq.get_xy()

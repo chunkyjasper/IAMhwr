@@ -7,7 +7,7 @@ from hwr.app.pubsub import pub, sub
 from hwr.constants import PREPROCESS
 from hwr.data.datarep import Point, PointSet
 from hwr.models.ONNET import ONNET
-
+from hwr.decoding.ctc_decoder import BestPathDecoder, TrieBeamSearchDecoder
 
 # Data for application
 class Model:
@@ -52,7 +52,7 @@ class ONNETpred(IPred):
 
     def __init__(self):
         super().__init__()
-        self.model = ONNET(preload=True)
+        self.model = ONNET(preload=True, gru=False, decoder=TrieBeamSearchDecoder(25))
 
     def get_features(self, strokes):
         points = []
@@ -61,10 +61,10 @@ class ONNETpred(IPred):
             for x, y in stroke:
                 points.append(Point(i, 0, x, y))
         pointset = PointSet(points=points)
-        pointset.plot_strokes()
+        pointset.plot_both()
         scheme = PREPROCESS.SCHEME6
         pointset.preprocess(**scheme)
-        pointset.plot_strokes()
+        pointset.plot_both()
         print(pointset)
         return pointset.generate_features(add_pad=10)
 

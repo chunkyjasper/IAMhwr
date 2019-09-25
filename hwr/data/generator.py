@@ -108,6 +108,10 @@ class IAMSequence(Sequence):
 
     def sample_at_idx(self, idx, pad=10):
         idx = self.indices[idx]
+        return self.sample_at_absolute_idx(idx, pad=pad)
+
+    # regardless of shuffling
+    def sample_at_absolute_idx(self, idx, pad=10):
         pointset = self.samples[idx].pointset
         ground_truth = mlf2txt(self.samples[idx].ground_truth)
         network_input = self.xs[idx]
@@ -116,6 +120,7 @@ class IAMSequence(Sequence):
                                pad_value=0)
         network_input = np.asarray([network_input])
         return network_input, ground_truth, pointset
+
 
     def on_epoch_end(self):
         np.random.shuffle(self.indices)

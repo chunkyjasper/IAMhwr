@@ -1,6 +1,4 @@
 import tkinter as tk
-from tkinter import scrolledtext
-
 from hwr.app.event import Event
 from hwr.app.pubsub import pub
 
@@ -39,7 +37,7 @@ class WritingPadView(tk.LabelFrame):
         self.btn1pressed = False
         self.xorig = None
         self.yorig = None
-        # Wait 2s, if mouse1 was not pressed, clear canvas
+        # Wait 1s, if mouse1 was not pressed, clear canvas
         after_id = self.after(1000, self.on_end_drawing)
         self.after_list.append(after_id)
 
@@ -82,7 +80,7 @@ class PredictedTextView(tk.LabelFrame):
         self.set_word_end()
 
     def setup_textbox(self):
-        self.textbox = tk.scrolledtext.ScrolledText(self)
+        self.textbox = ScrolledText(self)
         self.textbox.grid(row=0, column=0, sticky="nsew")
         self.textbox.tag_configure("TAG", background="#e9e9e9")
         self.set_word_start()
@@ -123,4 +121,31 @@ class CorrectionsView(tk.LabelFrame):
         assert (len(preds) == len(self.buttons))
         for i in range(len(self.buttons)):
             self.buttons[i].config(text=preds[i], command=lambda t=preds[i]: pub(Event.PRED_SELECTED, t))
+
+
+# Source code from tkinter
+class ScrolledText(tk.Text):
+    def __init__(self, master=None, **kw):
+        super(ScrolledText, self).__init__(master=master)
+        self.frame = tk.Frame(master)
+        self.vbar = tk.Scrollbar(self.frame)
+        self.vbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        kw.update({'yscrollcommand': self.vbar.set})
+        tk.Text.__init__(self, self.frame, **kw)
+        self.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.vbar['command'] = self.yview
+
+        # Copy geometry methods of self.frame without overriding Text
+        # methods -- hack!
+        text_meths = vars(tk.Text).keys()
+        methods = vars(tk.Pack).keys() | vars(tk.Grid).keys() | vars(tk.Place).keys()
+        methods = methods.difference(text_meths)
+
+        for m in methods:
+            if m[0] != '_' and m != 'config' and m != 'configure':
+                setattr(self, m, getattr(self.frame, m))
+
+    def __str__(self):
+        return str(self.frame)
 

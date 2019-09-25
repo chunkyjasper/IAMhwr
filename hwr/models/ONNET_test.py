@@ -2,7 +2,7 @@ from tensorflow.keras import backend as K
 from tensorflow.keras.layers import Conv1D, AveragePooling1D, Input, Dense, Activation, \
      LSTM, CuDNNGRU, CuDNNLSTM, \
     Lambda, BatchNormalization
-from tensorflow.keras.layers import concatenate, add
+from tensorflow.keras.layers import concatenate
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import SGD
 
@@ -79,15 +79,16 @@ from hwr.models.model import HWRModel
 # Attempt47: Same as a46, retry 13.88 loss , 8.431 cer 32 wer
 # a48: LSTM of a47
 # Implementation of model
-class ONNET(HWRModel):
-    def __init__(self, preload=False, gru=True, decoder=None):
+class ONNET_test(HWRModel):
+    def __init__(self, preload=False, gru=True):
         if gru:
             self.rnn = CuDNNGRU
-            preload_key = "ONNET-GRU" if preload else None
+            super().__init__(preload=preload)
         else:
             self.rnn = CuDNNLSTM
-            preload_key = "ONNET-LSTM" if preload else None
-        super().__init__(preload_key=preload_key, decoder=decoder)
+            super().__init__()
+            if preload:
+                self.load_weights(PRETRAINED['ONNET-LSTM'], full_path=True)
 
     def get_prediction_layer(self):
         return "softmax"
@@ -186,4 +187,3 @@ def residual_inception(inner):
     inc_cc = Conv1D(256, 1, padding="same", kernel_initializer='he_normal')(inc_cc)
     inner = add([inner, inc_cc])
     return inner
-
