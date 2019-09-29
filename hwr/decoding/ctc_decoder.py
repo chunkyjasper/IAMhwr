@@ -10,9 +10,9 @@ from tensorflow.python.ops import sparse_ops, math_ops, array_ops
 
 from hwr.constants import DATA, PATH
 from hwr.decoding.mlf import label2txt
-from hwr.decoding.trie import Trie
+from hwr.lm.trie import Trie
 from hwr.decoding.trie_beam_search import trie_beam_search
-from hwr.lm.lm import StupidBackoff, KneserNeyInterpolated, KneserNeyBackoff
+from hwr.lm.lm import StupidBackoff, KneserNeyInterpolated, KneserNeyBackoff, MLE
 
 
 # Interface for a CTC decoding algorithm
@@ -31,43 +31,39 @@ class ICTCDecoder:
         return
 
 
-class BestPathDecoder(ICTCDecoder):
-    def __init__(self):
-        super().__init__()
-
-    def decode(self, rnn_out, top_n):
-        pred = best_path_tensor(rnn_out)
-        return list(map(lambda p: [p for _ in range(top_n)], pred))
-
-
-class BeamSearchDecoder(ICTCDecoder):
-    def __init__(self, beam_width):
-        super().__init__()
-        self.beam_width = beam_width
-
-    def decode(self, rnn_out, top_n):
-        return beam_search_tensor(rnn_out, self.beam_width, top_paths=top_n)
-
-
 # See trie_beam_search.py
 class TrieBeamSearchDecoder(ICTCDecoder):
-    def __init__(self, beam_width, lm=None, trie=None, lm_order=0):
 
+    def __init__(self, beam_width, lm=None, ngram=0, prune=0, trie=None, gamma=1):
         super().__init__()
         self.beam_width = beam_width
+        self.gamma = gamma
+        if lm:
+            assert ngram
+            file_path = PATH.LM_DATA_DIR + str(ngram) + "gram-p" + str(prune) + ".pkl"
+            with open(file_path, 'rb') as fin:
+                counter = pickle.load(fin)
+                vocab = Vocabulary(DATA.CHARS)
+            lm_switcher = {
+                'mle': MLE(ngram, counter=counter, vocabulary=vocab),
+                'sbo': StupidBackoff(ngram, backoff=0.4, counter=counter, vocabulary=vocab),
+                'kn': KneserNeyInterpolated(ngram, counter=counter, vocabulary=vocab),
+                'knbo': KneserNeyBackoff(ngram, backoff=0.4, counter=counter, vocabulary=vocab),
+            }
+            lm = lm_switcher[lm]
         self.lm = lm
-        self.lm_order = lm_order
-        if lm is None:
-            self.lm_order = 5
-            self.lm = load_lm(self.lm_order, PATH.LM_DATA_DIR + "5gram_counter_pruned-10.pkl")
+        self.ngram = ngram
+        if trie:
+            trie_switcher = {
+                '100k': "wiki-100k.txt",
+                '10k': 'google-10000-english.txt',
+            }
+            trie = load_trie(PATH.LM_DATA_DIR + trie_switcher[trie])
         self.trie = trie
-        if trie is None:
-            self.trie = load_trie(PATH.LM_DATA_DIR + "wiki-100k.txt")
 
     def decode(self, rnn_out, top_n):
-        return trie_beam_search(rnn_out, self.lm, self.trie,
-                                self.beam_width, top_paths=top_n,
-                                lm_order=self.lm_order)
+        return trie_beam_search(rnn_out, self.beam_width, top_n, gamma=self.gamma,
+                                lm=self.lm, lm_order=self.ngram, trie=self.trie)
 
 
 def load_trie(file_path):
@@ -81,12 +77,23 @@ def load_trie(file_path):
     return t
 
 
-def load_lm(order, counter_file_path):
-    with open(counter_file_path, 'rb') as fin:
-        counter = pickle.load(fin)
-    chars = Vocabulary(DATA.CHARS)
-    # return KneserNeyInterpolated(order, counter=counter, vocabulary=chars)
-    return KneserNeyBackoff(order, backoff=0.4, counter=counter, vocabulary=chars)
+class BestPathDecoder(ICTCDecoder):
+    def __init__(self):
+        super().__init__()
+
+    def decode(self, rnn_out, top_n):
+        # pred = best_path_tensor(rnn_out)
+        pred = best_path(rnn_out)
+        return list(map(lambda p: [p for _ in range(top_n)], pred))
+
+
+class BeamSearchDecoder(ICTCDecoder):
+    def __init__(self, beam_width):
+        super().__init__()
+        self.beam_width = beam_width
+
+    def decode(self, rnn_out, top_n):
+        return beam_search_tensor(rnn_out, self.beam_width, top_paths=top_n)
 
 
 # Get max p across all labels at each timestep

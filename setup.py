@@ -9,3 +9,4 @@ setup(name='hwr',
       license='MIT',
       packages=['hwr'],
       zip_safe=False)
+

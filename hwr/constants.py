@@ -14,6 +14,7 @@ class PATH:
 class PREPROCESS:
     # def preprocess(self, down_d=0, down_cos=1, slop_correction=False,
     #                normalize=False, resample_distance=0, up_sample=0)
+    # Main scheme : SCHEME6
 
     SCHEME1 = {'slope_correction': True,
                'normalize': True,
@@ -39,17 +40,53 @@ class PREPROCESS:
                'resample_distance': 0.26,
                'up_sample': 10}
 
+    # result scheme
     SCHEME6 = {'slope_correction': True,
                'normalize': True,
                'down_cos': 0.975,
                'resample_distance': 0.37,
                'up_sample': 9}
 
-    SCHEME7 = {'slope_correction': True,
+    # no cos
+    SCHEME8 = {'slope_correction': True,
+               'normalize': True,
+               'resample_distance': 0.37,
+               'up_sample': 9}
+
+    # no upsample
+    SCHEME9 = {'slope_correction': True,
+               'normalize': True,
+                'down_cos': 0.975,
+               'resample_distance': 0.37,
+               }
+    # no slope correction
+    SCHEME10 = {'slope_correction': False,
                'normalize': True,
                'down_cos': 0.975,
-               'resample_distance': 0.30,
-               'up_sample': 12}
+               'resample_distance': 0.37,
+               'up_sample': 9,
+               }
+
+    # no resampling
+    SCHEME11 = {'slope_correction': False,
+               'normalize': True,
+               'down_cos': 0.975,
+               'up_sample': 9,
+               }
+
+    # no resampling, down cos
+    SCHEME12 = {'slope_correction': False,
+               'normalize': True,
+               'up_sample': 9,
+               }
+
+    # no normalization
+    SCHEME13 = {'slope_correction': False,
+               'down_cos': 0.975,
+               'up_sample': 9,
+               'resample_distance': 0.37,
+               }
+
 
     CURRENT_SCHEME = SCHEME6
 
@@ -132,10 +169,9 @@ PRETRAINED = {
     "ONNET3": PATH.MODEL_DIR + "ONNET3/2019-02-28-19:13:08/weights.h5",
     "ONNET3v2": PATH.MODEL_DIR + "ONNET3v2/2019-03-24-00:22:37-a412/weights.h5",
     "ONNET": PATH.MODEL_DIR + "ONNET/pretrained/weights.h5",
-    "ONNET-LSTM": PATH.MODEL_DIR + "ONNET/pretrained-large-lstm/weights.h5",
+    "ONNET-LSTM": PATH.MODEL_DIR + "ONNET/pretrained-deep-lstm/weights.h5",
     "ONNET-GRU": PATH.MODEL_DIR + "ONNET/pretrained-large-gru/weights.h5"
 }
-
 
 
 LINE_BLACKLIST = ["h02-037-02",  # corrupted stroke

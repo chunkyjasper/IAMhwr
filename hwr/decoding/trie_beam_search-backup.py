@@ -5,6 +5,8 @@ from tqdm import tqdm
 
 from hwr.constants import DATA
 
+# Issue: minor reduction of CER comparing to the normal implementation.
+# Therefore use the old version.
 class Beam:
 
     def __init__(self, root):

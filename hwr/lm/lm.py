@@ -2,14 +2,19 @@ from nltk.lm.api import LanguageModel, Smoothing
 
 
 class MLE(LanguageModel):
+    def __init__(self, order, **kwargs):
+        super().__init__(order, **kwargs)
+        self.order = order
+
     def unmasked_score(self, word, context=None):
-        context = context[-(self.order - 1):]
+        if context:
+            context = context[-(self.order - 1):]
         return self.context_counts(context).freq(word)
 
 
 class StupidBackoff(LanguageModel):
     def __init__(self, order, backoff=0.4, **kwargs):
-        super().__init__(order=order, **kwargs)
+        super().__init__(order, **kwargs)
         self.backoff = backoff
 
     def unmasked_score(self, word, context=None):
@@ -24,7 +29,6 @@ class StupidBackoff(LanguageModel):
             return ngram_count / context_freq_d.N()
 
 
-# Implemention from NLTK. Override to fix zero division issue.
 class KneserNeyInterpolated(LanguageModel):
     def __init__(self, order, **kwargs):
         super().__init__(order, **kwargs)
@@ -35,8 +39,6 @@ class KneserNeyInterpolated(LanguageModel):
             return self.estimator.unigram_score(word)
         context = context[-(self.order - 1):]
         alpha, gamma = self.estimator.alpha_gamma(word, context)
-        if alpha == 0 and gamma == 0:
-            return 0
         return alpha + gamma * self.unmasked_score(word, context[1:])
 
 
@@ -54,7 +56,7 @@ class KneserNeyBackoff(LanguageModel):
         return alpha + gamma * self.unmasked_score(word, context[1:])
 
 
-def _count_non_zero_vals(dictionary):
+def count_non_zero_vals(dictionary):
     return sum(1.0 for c in dictionary.values() if c > 0)
 
 
@@ -74,8 +76,9 @@ class KneserNey(Smoothing):
         word_count_given_prefix = prefix_counts[word]
         if word_count_given_prefix:
             alpha = max(word_count_given_prefix - self.discount, 0.0) / prefix_total_ngrams
-            gamma = (self.discount * _count_non_zero_vals(prefix_counts) / prefix_total_ngrams)
+            gamma = (self.discount * count_non_zero_vals(prefix_counts) / prefix_total_ngrams)
         else:
             alpha = 0.0
-            gamma = self.backoff
+            gamma = self.backoff if self.backoff else 1
+
         return alpha, gamma

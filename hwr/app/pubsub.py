@@ -1,7 +1,4 @@
-"""
-Basic publisher subscriber pattern
-"""
-
+# Basic publisher subscriber pattern
 subscribers = {}
 
 

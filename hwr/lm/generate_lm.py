@@ -27,7 +27,7 @@ def clean_text(txt):
     return clean_space(clean_newline(clean_chars(txt))).lower()
 
 
-# Given
+# count everygram up to ngram
 def update_counter(counter, ngram, fname, batch=10000):
     print("Updating counter with file:")
     print(fname)
@@ -80,17 +80,32 @@ def prune_counter(counter, order, threshold=10):
         new_counter._counts[i] = prune_cond_dist(counter[i], threshold=threshold)
     return new_counter
 
-def get_ngram_count(counter, order):
+
+def get_unique_ngram_count(counter, order):
+    total = 0
+    for i in range(2, order + 1):
+        cond = counter[i]
+        for freqdist in cond.values():
+            total += sum(1.0 for c in freqdist.values() if c > 0)
+    return total
+
+
+def get_cond_count(counter, order):
     s = 0
     for i in range(order):
         s += len(counter[i])
     return s
 
+
+# Return a subset of ngram of lower order
 def get_subset_from_counter(counter, order):
     new_counter = NgramCounter()
     for i in range(order):
-        new_counter._counts[i] = counter[i]
+        new_counter._counts[i + 1] = counter[i + 1]
+
     return new_counter
+
+
 
 
 ngram = 7

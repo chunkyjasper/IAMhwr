@@ -37,6 +37,15 @@ def word_error_rate(y_true, y_pred):
     return avg_wer
 
 
+# Out of vocab rate given dict in trie
+def oov(trie, lines):
+    pattern = r'[\w]+'
+    words = [re.findall(pattern, l) for l in lines]
+    words = [item for sublist in words for item in sublist]
+    is_word = [trie.is_word(w) for w in words]
+    return 1 - (sum(is_word) / len(is_word))
+
+
 
 
 

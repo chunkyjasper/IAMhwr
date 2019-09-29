@@ -5,7 +5,7 @@ from hwr.app.pubsub import sub
 from hwr.app.event import Event
 
 
-# Overall layout
+# Controller
 class App(tk.Tk):
     def __init__(self, *args, **kwargs):
         super(App, self).__init__(*args, **kwargs)
@@ -44,9 +44,11 @@ class App(tk.Tk):
         self.mainloop()
 
 
-def main():
+def run_app():
     App().run()
 
 
 if __name__ == "__main__":
-    main()
+    run_app()
+
+

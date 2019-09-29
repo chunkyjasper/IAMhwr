@@ -123,7 +123,7 @@ notebooks/
 
 data/*
 !data/1blm/*
-!data/iamon
+!data/iamon/lineStrokes(on)/*
 #Keep corpus example
 data/lblm/*
 !data/1blm/corpus_example.txt

@@ -52,7 +52,10 @@ class ONNETpred(IPred):
 
     def __init__(self):
         super().__init__()
-        self.model = ONNET(preload=True, gru=False, decoder=TrieBeamSearchDecoder(25))
+        decoder = TrieBeamSearchDecoder(25, lm="sbo",
+                                        ngram=5, prune=100,
+                                        trie="100k", gamma=1)
+        self.model = ONNET(preload=True, gru=False, decoder=decoder)
 
     def get_features(self, strokes):
         points = []
@@ -61,11 +64,11 @@ class ONNETpred(IPred):
             for x, y in stroke:
                 points.append(Point(i, 0, x, y))
         pointset = PointSet(points=points)
-        pointset.plot_both()
+        #pointset.plot_both()
         scheme = PREPROCESS.SCHEME6
         pointset.preprocess(**scheme)
-        pointset.plot_both()
-        print(pointset)
+        #pointset.plot_both()
+        #print(pointset)
         return pointset.generate_features(add_pad=10)
 
     def predict(self, features, n):

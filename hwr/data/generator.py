@@ -57,6 +57,7 @@ class IAMSequence(Sequence):
         # How much the TDNN scale down the input
         self.inout_ratio = inout_ratio
 
+
     def __len__(self):
         return int(np.ceil(self.n / float(self.batch_size)))
 
@@ -130,6 +131,10 @@ class IAMSequence(Sequence):
         xs = [self.xs[idx] for idx in self.indices]
         ys = mlf2txt([self.ys[idx] for idx in self.indices], multiple=True)
         return xs, ys
+
+    def gen_iter(self):
+        for i in range(len(self)):
+            yield self[i]
 
 
 def pad_2d(x, pad_to, pad_value):

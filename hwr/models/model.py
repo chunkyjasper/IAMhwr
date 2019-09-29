@@ -9,7 +9,7 @@ from tensorflow.keras.utils import Sequence
 from hwr.constants import PRETRAINED, DATA, PATH
 from hwr.decoding.ctc_decoder import TrieBeamSearchDecoder
 from hwr.models.metrics import character_error_rate, word_error_rate
-
+from tqdm import tqdm
 
 # Interface for prediction model
 class HWRModel(object):
@@ -18,12 +18,14 @@ class HWRModel(object):
         __metaclass__ = abc.ABCMeta
         self.decoder = decoder
         if decoder is None:
-            self.decoder = TrieBeamSearchDecoder(beam_width=25)
+            self.decoder = TrieBeamSearchDecoder(beam_width=25, lm="sbo", ngram=7,
+                                                 prune=10, trie='100k', gamma=1)
         self.chars = chars
         self.class_name = type(self).__name__
         self.ckptdir = PATH.CKPT_DIR + self.class_name + "/"
         self.char_size = len(chars) + 1
         self.model = self.get_model_conf()
+        self.pred_model = self.get_intermediate_model(self.get_prediction_layer())
         self.compile()
         if preload_key:
             self.pretrained = PRETRAINED[preload_key]
@@ -57,8 +59,6 @@ class HWRModel(object):
         in_model.compile(loss={layer_name: lambda y_true, y_pred: y_pred}, optimizer='adam')
         return in_model
 
-    def get_pred_model(self):
-        return self.get_intermediate_model(self.get_prediction_layer())
 
     def train(self, train_seq, test_seq, epochs=100, earlystop=5):
         ckptdir = self.ckptdir + get_time() + '/'
@@ -79,16 +79,24 @@ class HWRModel(object):
         )
 
     def predict_softmax(self, x):
-        if isinstance(x, Sequence):
-            sm = self.get_pred_model().predict_generator(x, verbose=1)
+        # for variable length sequence
+        if isinstance(x, Sequence) and x.batch_size == 1:
+            print("predicting softmax for sequence with batch size: 1, will return list of ndarray.")
+            sm = []
+            gen = x.gen_iter()
+            for b in tqdm(gen, total=len(x)):
+                sm.append(self.pred_model.predict(b, verbose=0)[0])
+        elif isinstance(x, Sequence):
+            sm = self.pred_model.predict_generator(x, verbose=1)
         else:
-            sm = self.get_pred_model().predict(x, verbose=1)
+            sm = self.pred_model.predict(x, verbose=1)
         return sm
 
     # return top n predicted text.
     def predict(self, x, decoder=None, top=1):
         if decoder is None:
             decoder = self.decoder
+
         softmaxs = self.predict_softmax(x)
         pred = decoder.decode(rnn_out=softmaxs, top_n=top)
         if top == 1:
