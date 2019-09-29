@@ -78,8 +78,10 @@ from hwr.models.model import HWRModel
 # Attempt46: 60 90 120 120 160 200 100 100 7 5 5 3 3 3. 13.98 loss 8.45 cer
 # Attempt47: Same as a46, retry 13.88 loss , 8.431 cer 32 wer
 # a48: LSTM of a47
+# a49 : 60 90 120 120 160 200 60 60 60 60 7 7 5 3 3  7.93 cer 30.2 wer new best
+# a50
 # Implementation of model
-class ONNET(HWRModel):
+class ONNET_test(HWRModel):
     def __init__(self, preload=False, gru=True):
         if gru:
             self.rnn = CuDNNGRU
@@ -97,7 +99,7 @@ class ONNET(HWRModel):
         return "xs"
 
     def get_optimizer(self):
-        #return SGD(lr=1e-5, momentum=0.9, nesterov=True, clipnorm=5)
+        #return SGD(lr=1e-4, momentum=0.9, nesterov=True, clipnorm=5)
         return 'adam'
 
     def get_loss(self):
@@ -120,8 +122,10 @@ class ONNET(HWRModel):
         inner = AveragePooling1D(pool_size=2)(inner)
 
         # No significant difference between gru and lstm
-        inner = self.bi_rnn(inner, 100)
-        inner = self.bi_rnn(inner, 100)
+        inner = self.bi_rnn(inner, 60)
+        inner = self.bi_rnn(inner, 60)
+        inner = self.bi_rnn(inner, 60)
+        inner = self.bi_rnn(inner, 60)
 
         inner = BatchNormalization()(inner)
 
@@ -187,4 +191,3 @@ def residual_inception(inner):
     inc_cc = Conv1D(256, 1, padding="same", kernel_initializer='he_normal')(inc_cc)
     inner = add([inner, inc_cc])
     return inner
-
