@@ -2,13 +2,15 @@
 
 [IAM database](http://www.fki.inf.unibe.ch/databases/iam-handwriting-database)
 
+6.2% character error rate (CER) on IAM-OnDB independent writer handwriting task 2.
+
 ## Network 
 ![overview](pics/architecture-overview.png)
 
 ## Getting Started
 
 ### Installing
-Create a virtual environment if neccessary.
+Create a virtual environment.
 
 Install dependencies
 ```
